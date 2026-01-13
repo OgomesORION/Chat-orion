@@ -116,18 +116,31 @@ function adicionarMensagem(texto, tipo) {
 }
 
 function respostaBot(msg) {
-    if (msg.toLowerCase().includes("oi")) {
+    const texto = msg.toLowerCase();
+
+    if (texto.includes("oi") || texto.includes("olá")) {
         return "Olá 👋 Como posso ajudar?";
     }
-    if (msg.toLowerCase().includes("hora")) {
+
+    if (texto.includes("tudo bem") || texto.includes("td bem")) {
+        return "Tudo ótimo 😄 E você?";
+    }
+
+    if (texto.includes("hora")) {
         return "Agora são " + new Date().toLocaleTimeString();
     }
-    return "Recebido: " + msg;
+
+    if (texto.includes("nome")) {
+        return "Meu nome é ÓRION 🤖";
+    }
+
+    if (texto.includes("obrigado")) {
+        return "Sempre às ordens 😎";
+    }
+
+    return "Entendi 🤔 Pode me explicar melhor?";
 }
 
-function enviar() {
-    const texto = input.value.trim();
-    if (!texto) return;
 
     adicionarMensagem(texto, "user");
     input.value = "";
