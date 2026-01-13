@@ -33,6 +33,25 @@ header {
     font-weight: bold;
     letter-spacing: 2px;
     border-bottom: 1px solid #0ff;
+    position: relative;
+}
+
+#btnNova {
+    position: absolute;
+    right: 12px;
+    top: 8px;
+    padding: 8px 12px;
+    border: 1px solid #0ff;
+    border-radius: 6px;
+    background: transparent;
+    color: #00f7ff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+#btnNova:hover {
+    background: #00f7ff;
+    color: #050510;
 }
 
 .chat {
@@ -49,6 +68,7 @@ header {
     border-radius: 8px;
     max-width: 80%;
     word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .user {
@@ -92,12 +112,15 @@ header {
 <body>
 
 <div class="container">
-    <header>ÓRION</header>
+    <header>
+        ÓRION
+        <button id="btnNova" onclick="novaConversa()">Nova conversa</button>
+    </header>
 
     <div class="chat" id="chat"></div>
 
     <div class="footer">
-        <input id="input" type="text" placeholder="Digite algo..." onkeydown="if(event.key==='Enter'){enviar()}" />
+        <input id="input" type="text" placeholder="Digite algo..." />
         <button onclick="enviar()">Enviar</button>
     </div>
 </div>
@@ -112,111 +135,83 @@ function adicionarMensagem(texto, tipo) {
     chat.scrollTop = chat.scrollHeight;
 }
 
-function respostaBot(msg) {
-    const t = msg.toLowerCase();
+// ENTER para enviar (sem inline no HTML)
+document.getElementById("input").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") enviar();
+});
 
-    if (t.match(/oi|olá|ola|eai|fala/)) {
-        return "Olá 👋 Em que posso te ajudar?";
-    }
-
-    if (t.includes("tudo bem")) {
-        return "Tudo ótimo 😄 E você?";
-    }
-
-    if (t.includes("seu nome") || t.includes("quem é você")) {
-        return "Eu sou o ÓRION 🤖, um assistente virtual.";
-    }
-
-    if (t.includes("hora")) {
-        return "Agora são " + new Date().toLocaleTimeString();
-    }
-
-    if (t.includes("obrigado") || t.includes("valeu")) {
-        return "Sempre às ordens 😎";
-    }
-
-    if (t.includes("ajuda")) {
-        return "Claro! Pode perguntar qualquer coisa 🙂";
-    }
-
-    // RESPOSTA IA FAKE (GENÉRICA, ESTILO PYTHON)
-    const respostas = [
-        "Interessante 🤔 Pode me contar mais?",
-        "Entendi. O que mais você acha sobre isso?",
-        "Boa pergunta 👀 Vamos pensar juntos.",
-        "Fala mais um pouco pra eu entender melhor.",
-        "Isso é algo bem interessante de se discutir."
-    ];
-
-    return respostas[Math.floor(Math.random() * respostas.length)];
-}
-
-function enviar() {
-    const input = document.getElementById("input");
-    const texto = input.value.trim();
-
-    if (!texto) return;
-
-    adicionarMensagem(texto, "user");
-    input.value = "";
-
-    // efeito de pensamento
-    setTimeout(() => {
-        adicionarMensagem(respostaBot(texto), "bot");
-    }, 500);
-}
-
-// mensagem inicial
-<script>
+// ====== MEMÓRIA (conversationId) ======
 let conversationId = localStorage.getItem("orion_conversation");
 
 if (!conversationId) {
-  conversationId = crypto.randomUUID();
-  localStorage.setItem("orion_conversation", conversationId);
+    conversationId = crypto.randomUUID();
+    localStorage.setItem("orion_conversation", conversationId);
 }
 
 // mensagem inicial
 adicionarMensagem("Olá 👋 Eu sou o ÓRION. Pode perguntar qualquer coisa.", "bot");
 
+// ====== CHAT COM BACKEND ======
 async function enviar() {
-  const input = document.getElementById("input");
-  const texto = input.value.trim();
-  if (!texto) return;
+    const input = document.getElementById("input");
+    const texto = input.value.trim();
+    if (!texto) return;
 
-  adicionarMensagem(texto, "user");
-  input.value = "";
+    adicionarMensagem(texto, "user");
+    input.value = "";
 
-  const res = await fetch("http://localhost:3000/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: texto,
-      conversationId
-    })
-  });
+    // opcional: feedback visual
+    adicionarMensagem("...", "bot");
 
-  const data = await res.json();
-  adicionarMensagem(data.reply, "bot");
+    try {
+        const res = await fetch("http://localhost:3000/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: texto,
+                conversationId
+            })
+        });
+
+        const data = await res.json();
+
+        // remove o "..."
+        const chat = document.getElementById("chat");
+        chat.removeChild(chat.lastChild);
+
+        if (data.reply) {
+            adicionarMensagem(data.reply, "bot");
+        } else {
+            adicionarMensagem("⚠️ Não veio resposta do servidor.", "bot");
+        }
+    } catch (err) {
+        // remove o "..."
+        const chat = document.getElementById("chat");
+        chat.removeChild(chat.lastChild);
+
+        adicionarMensagem("❌ Erro ao conectar no servidor (localhost:3000).", "bot");
+        console.error(err);
+    }
 }
 
 async function novaConversa() {
-  const res = await fetch("http://localhost:3000/new-conversation", {
-    method: "POST"
-  });
+    try {
+        const res = await fetch("http://localhost:3000/new-conversation", {
+            method: "POST"
+        });
 
-  const data = await res.json();
+        const data = await res.json();
+        conversationId = data.conversationId;
+        localStorage.setItem("orion_conversation", conversationId);
 
-  conversationId = data.conversationId;
-  localStorage.setItem("orion_conversation", conversationId);
-
-  // limpa a tela
-  document.getElementById("chat").innerHTML = "";
-
-  // mensagem inicial novamente
-  adicionarMensagem("🧠 Nova conversa iniciada.", "bot");
+        document.getElementById("chat").innerHTML = "";
+        adicionarMensagem("🧠 Nova conversa iniciada.", "bot");
+    } catch (err) {
+        adicionarMensagem("❌ Erro ao criar nova conversa.", "bot");
+        console.error(err);
+    }
 }
 </script>
-
 
 </body>
 </html>
