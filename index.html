@@ -167,8 +167,56 @@ function enviar() {
 }
 
 // mensagem inicial
+<script>
+let conversationId = localStorage.getItem("orion_conversation");
+
+if (!conversationId) {
+  conversationId = crypto.randomUUID();
+  localStorage.setItem("orion_conversation", conversationId);
+}
+
+// mensagem inicial
 adicionarMensagem("Olá 👋 Eu sou o ÓRION. Pode perguntar qualquer coisa.", "bot");
+
+async function enviar() {
+  const input = document.getElementById("input");
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  adicionarMensagem(texto, "user");
+  input.value = "";
+
+  const res = await fetch("http://localhost:3000/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: texto,
+      conversationId
+    })
+  });
+
+  const data = await res.json();
+  adicionarMensagem(data.reply, "bot");
+}
+
+async function novaConversa() {
+  const res = await fetch("http://localhost:3000/new-conversation", {
+    method: "POST"
+  });
+
+  const data = await res.json();
+
+  conversationId = data.conversationId;
+  localStorage.setItem("orion_conversation", conversationId);
+
+  // limpa a tela
+  document.getElementById("chat").innerHTML = "";
+
+  // mensagem inicial novamente
+  adicionarMensagem("🧠 Nova conversa iniciada.", "bot");
+}
 </script>
+
 
 </body>
 </html>
