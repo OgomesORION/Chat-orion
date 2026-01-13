@@ -31,6 +31,7 @@ header {
     text-align: center;
     padding: 12px;
     font-weight: bold;
+    letter-spacing: 2px;
     border-bottom: 1px solid #0ff;
 }
 
@@ -43,10 +44,11 @@ header {
 }
 
 .msg {
-    margin-bottom: 10px;
-    padding: 10px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
     border-radius: 8px;
     max-width: 80%;
+    word-wrap: break-word;
 }
 
 .user {
@@ -111,32 +113,63 @@ function adicionarMensagem(texto, tipo) {
 }
 
 function respostaBot(msg) {
-    msg = msg.toLowerCase();
+    const t = msg.toLowerCase();
 
-    if (msg.includes("oi")) return "Olá 👋";
-    if (msg.includes("tudo bem")) return "Tudo ótimo 😄";
-    if (msg.includes("hora")) return "Agora são " + new Date().toLocaleTimeString();
+    if (t.match(/oi|olá|ola|eai|fala/)) {
+        return "Olá 👋 Em que posso te ajudar?";
+    }
 
-    return "Entendi 👍";
+    if (t.includes("tudo bem")) {
+        return "Tudo ótimo 😄 E você?";
+    }
+
+    if (t.includes("seu nome") || t.includes("quem é você")) {
+        return "Eu sou o ÓRION 🤖, um assistente virtual.";
+    }
+
+    if (t.includes("hora")) {
+        return "Agora são " + new Date().toLocaleTimeString();
+    }
+
+    if (t.includes("obrigado") || t.includes("valeu")) {
+        return "Sempre às ordens 😎";
+    }
+
+    if (t.includes("ajuda")) {
+        return "Claro! Pode perguntar qualquer coisa 🙂";
+    }
+
+    // RESPOSTA IA FAKE (GENÉRICA, ESTILO PYTHON)
+    const respostas = [
+        "Interessante 🤔 Pode me contar mais?",
+        "Entendi. O que mais você acha sobre isso?",
+        "Boa pergunta 👀 Vamos pensar juntos.",
+        "Fala mais um pouco pra eu entender melhor.",
+        "Isso é algo bem interessante de se discutir."
+    ];
+
+    return respostas[Math.floor(Math.random() * respostas.length)];
 }
 
 function enviar() {
     const input = document.getElementById("input");
     const texto = input.value.trim();
 
-    if (texto === "") return;
+    if (!texto) return;
 
     adicionarMensagem(texto, "user");
     input.value = "";
 
+    // efeito de pensamento
     setTimeout(() => {
         adicionarMensagem(respostaBot(texto), "bot");
-    }, 300);
+    }, 500);
 }
 
 // mensagem inicial
-adicionarMensagem("Olá 👋 Eu sou o ÓRION", "bot");
+adicionarMensagem("Olá 👋 Eu sou o ÓRION. Pode perguntar qualquer coisa.", "bot");
 </script>
 
 </body>
 </html>
+
