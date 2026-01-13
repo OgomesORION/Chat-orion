@@ -105,7 +105,7 @@ header {
 <script>
 const chat = document.getElementById("chat");
 const input = document.getElementById("input");
-const btnEnviar = document.getElementById("btnEnviar");
+const btnEnviar = document.getElementById("btnEnviar") || document.querySelector("button");
 
 function adicionarMensagem(texto, tipo) {
   const div = document.createElement("div");
@@ -115,20 +115,26 @@ function adicionarMensagem(texto, tipo) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-// ENTER funciona
+// gera ID seguro
+function makeId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "c_" + Date.now() + "_" + Math.random().toString(16).slice(2);
+}
+
+// conversationId
+let conversationId = localStorage.getItem("orion_conversation");
+if (!conversationId) {
+  conversationId = makeId();
+  localStorage.setItem("orion_conversation", conversationId);
+}
+
+// ENTER envia
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter") enviar();
 });
 
-// botão funciona
-btnEnviar.addEventListener("click", enviar);
-
-// ===== conversationId =====
-let conversationId = localStorage.getItem("orion_conversation");
-if (!conversationId) {
-  conversationId = crypto.randomUUID();
-  localStorage.setItem("orion_conversation", conversationId);
-}
+// botão envia
+if (btnEnviar) btnEnviar.addEventListener("click", enviar);
 
 // mensagem inicial
 adicionarMensagem("Olá 👋 Eu sou o ÓRION. Pode perguntar qualquer coisa.", "bot");
@@ -146,19 +152,25 @@ async function enviar() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: texto,
-        conversationId
+        conversationId: conversationId
       })
     });
 
     const data = await res.json();
-    adicionarMensagem(data.reply || "⚠️ Sem resposta", "bot");
 
+    if (!res.ok) {
+      adicionarMensagem("❌ Erro: " + (data.error || "falha"), "bot");
+      return;
+    }
+
+    adicionarMensagem(data.reply || "⚠️ Sem resposta", "bot");
   } catch (err) {
-    adicionarMensagem("❌ Backend não conectado.", "bot");
+    adicionarMensagem("❌ Backend não conectado (localhost:3000).", "bot");
     console.error(err);
   }
 }
 </script>
+
 
 </body>
 </html>
